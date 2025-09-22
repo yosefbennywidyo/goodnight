@@ -8,4 +8,20 @@ class User < ApplicationRecord
   validates :name, presence: true, uniqueness: { case_sensitive: false }
 
   scope :by_name, ->(name) { where('lower(name) = ?', name.downcase) }
+
+  # Finds the user with the most followers.
+  def self.with_most_followers
+    joins(:followers)
+      .group('users.id')
+      .order('COUNT(follows.id) DESC')
+      .first
+  end
+
+  # Finds the user who is following the most other users.
+  def self.following_the_most
+    joins(:following)
+      .group('users.id')
+      .order('COUNT(follows.id) DESC')
+      .first
+  end
 end

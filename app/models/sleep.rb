@@ -25,7 +25,11 @@ class Sleep < ApplicationRecord
   end
 
   def invalidate_cache
-    # Invalidate cache for user summaries on sleep record changes
-    Rails.cache.delete_matched("user_summary_#{user_id}_*")
+    # When a sleep record changes, the "friends' sleep" feed of anyone following this user is now stale.
+    # We need to invalidate the cache for each follower.
+    user.followers.find_each do |follower|
+      # This matches the cache key structure in FriendsSleepsQuery
+      Rails.cache.delete_matched("friends_sleeps/v2/#{follower.id}-*")
+    end
   end
 end
