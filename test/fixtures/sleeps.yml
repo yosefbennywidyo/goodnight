@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user: one
+  clock_in: <%= 1.day.ago %>
+  clock_out: <%= 1.day.ago + 8.hours %>
+  duration: 28800
+
+two:
+  user: two
+  clock_in: <%= 2.days.ago %>
+  clock_out: <%= 2.days.ago + 6.hours %>
+  duration: 21600
