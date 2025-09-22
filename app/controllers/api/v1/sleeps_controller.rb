@@ -24,12 +24,16 @@ class Api::V1::SleepsController < ApplicationController
   end
 
   def friends_sleeps
+    # Set default date range to the last week if not provided
+    end_date = params[:end_date] ? Date.parse(params[:end_date]) : Date.today
+    start_date = params[:start_date] ? Date.parse(params[:start_date]) : end_date - 1.week
+
     # Get followed users' IDs
     followed_user_ids = current_user.following.pluck(:id)
 
     # Query sleep records with date range limitation for performance
     sleeps = Sleep.where(user_id: followed_user_ids)
-                  .where(clock_in: params[:start_date]..params[:end_date])
+                  .where(clock_in: start_date.beginning_of_day..end_date.end_of_day)
                   .includes(:user)
                   .order(clock_in: :desc)
 
@@ -38,8 +42,8 @@ class Api::V1::SleepsController < ApplicationController
 
     # Cache user summaries (e.g., total sleep for each friend in the date range)
     summaries = followed_user_ids.map do |user_id|
-      Rails.cache.fetch("user_summary_#{user_id}_#{params[:start_date]}_#{params[:end_date]}", expires_in: 1.hour) do
-        Sleep.where(user_id: user_id, clock_in: params[:start_date]..params[:end_date])
+      Rails.cache.fetch("user_summary_#{user_id}_#{start_date}_#{end_date}", expires_in: 1.hour) do
+        Sleep.where(user_id: user_id, clock_in: start_date.beginning_of_day..end_date.end_of_day)
              .sum(:duration)
       end
     end
