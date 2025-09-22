@@ -27,8 +27,17 @@
 threads_count = ENV.fetch("RAILS_MAX_THREADS", 3)
 threads threads_count, threads_count
 
+# Specifies the number of `workers` to boot in clustered mode.
+# Workers are forked web server processes. If using threads and workers together
+workers ENV.fetch("WEB_CONCURRENCY", 2)
+
 # Specifies the `port` that Puma will listen on to receive requests; default is 3000.
 port ENV.fetch("PORT", 3000)
+
+# Preload the application before starting the workers.
+# This is recommended for multi-worker setups to improve memory usage and boot time.
+# See: https://devcenter.heroku.com/articles/deploying-rails-applications-with-the-puma-web-server#preload-app
+preload_app!
 
 # Allow puma to be restarted by `bin/rails restart` command.
 plugin :tmp_restart

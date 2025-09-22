@@ -32,7 +32,12 @@ Rails.application.configure do
 
   # Log to STDOUT with the current request id as a default log tag.
   config.log_tags = [ :request_id ]
-  config.logger   = ActiveSupport::TaggedLogging.logger(STDOUT)
+  # Use a different logger for distributed setups.
+  # config.logger = ActiveSupport::TaggedLogging.new(Syslog::Logger.new "app-name")
+  # Prepend all log lines with the following tags.
+  config.log_formatter = ::Logger::Formatter.new
+  # Use a logger that can handle a hash.
+  config.logger = ActiveSupport::Logger.new(STDOUT, formatter: config.log_formatter)
 
   # Change to "debug" to log everything (including potentially personally-identifiable information!)
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info")
@@ -44,7 +49,7 @@ Rails.application.configure do
   config.active_support.report_deprecations = false
 
   # Replace the default in-process memory cache store with a durable alternative.
-  config.cache_store = :solid_cache_store
+  config.cache_store = :redis_cache_store, { url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0") }
 
   # Replace the default in-process and non-durable queuing backend for Active Job.
   config.active_job.queue_adapter = :solid_queue
