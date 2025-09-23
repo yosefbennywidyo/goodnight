@@ -37,7 +37,7 @@ ers.each_with_index do |user, index|
   num_sleeps.times do
     # Random clock_in time in the past 7 days, between 10 PM and 2 AM
     base_date = rand(7).days.ago.to_date
-    clock_in_hour = [22, 23, 0, 1, 2].sample  # Valid hours: 22-23 (PM), 0-2 (AM)
+    clock_in_hour = [ 22, 23, 0, 1, 2 ].sample  # Valid hours: 22-23 (PM), 0-2 (AM)
     clock_in = Time.zone.parse("#{base_date} #{clock_in_hour}:00")
 
     # Random duration between 4 and 10 hours

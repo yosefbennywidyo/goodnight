@@ -30,12 +30,12 @@ class CreateSleeps < ActiveRecord::Migration[8.1]
 
     # Composite index on user_id, created_at, and duration for filtering friends' sleeps by week and sorting by duration
     # (e.g., current_user.following.joins(:sleeps).where('sleeps.created_at >= ?', 1.week.ago).order('sleeps.duration DESC'))
-    add_index :sleeps, [:user_id, :created_at, :duration], name: 'index_sleeps_on_user_id_created_at_duration'
+    add_index :sleeps, [ :user_id, :created_at, :duration ], name: 'index_sleeps_on_user_id_created_at_duration'
     # Composite index on user_id, clock_in, and duration for queries filtering by user and time, then sorting by duration
     # (e.g., Sleep.where(user_id: user.id).where('clock_in >= ?', 1.week.ago).order(:duration))
-    add_index :sleeps, [:user_id, :clock_in, :duration], name: 'index_sleeps_on_user_id_clock_in_duration'
+    add_index :sleeps, [ :user_id, :clock_in, :duration ], name: 'index_sleeps_on_user_id_clock_in_duration'
     # Composite index on user_id and created_at for filtering user's sleeps by week
     # (e.g., Sleep.where(user_id: user.id).where('created_at >= ?', 1.week.ago))
-    add_index :sleeps, [:user_id, :created_at], name: 'index_sleeps_on_user_id_created_at'
+    add_index :sleeps, [ :user_id, :created_at ], name: 'index_sleeps_on_user_id_created_at'
   end
 end

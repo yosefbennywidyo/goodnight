@@ -1,5 +1,5 @@
 class Api::V1::SleepsController < ApplicationController
-  before_action :set_sleep, only: [:update]
+  before_action :set_sleep, only: [ :update ]
   before_action :require_user
 
   def index
@@ -56,6 +56,6 @@ class Api::V1::SleepsController < ApplicationController
 
   def require_user
     return if current_user
-    render json: { error: 'User not found' }, status: :not_found
+    render json: { error: "User not found" }, status: :not_found
   end
 end

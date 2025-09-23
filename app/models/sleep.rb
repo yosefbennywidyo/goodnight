@@ -21,7 +21,7 @@ class Sleep < ApplicationRecord
   end
 
   def clock_out_after_clock_in
-    errors.add(:clock_out, 'must be after clock_in') if clock_out <= clock_in
+    errors.add(:clock_out, "must be after clock_in") if clock_out <= clock_in
   end
 
   def invalidate_cache

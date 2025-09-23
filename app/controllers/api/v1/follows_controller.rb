@@ -1,5 +1,5 @@
 class Api::V1::FollowsController < ApplicationController
-  before_action :set_follow, only: [:destroy]
+  before_action :set_follow, only: [ :destroy ]
 
   def index
     follows = current_user.follows_as_follower.includes(:followed)
@@ -19,12 +19,12 @@ class Api::V1::FollowsController < ApplicationController
   def destroy
     if @follow
       if @follow.destroy
-        render json: { message: 'Unfollowed successfully' }, status: :ok
+        render json: { message: "Unfollowed successfully" }, status: :ok
       else
-        render json: { error: 'Unable to unfollow' }, status: :unprocessable_entity
+        render json: { error: "Unable to unfollow" }, status: :unprocessable_entity
       end
     else
-      render json: { error: 'Follow not found' }, status: :not_found
+      render json: { error: "Follow not found" }, status: :not_found
     end
   end
 

@@ -1,5 +1,5 @@
 class Api::V1::UsersController < ApplicationController
-  before_action :set_user, only: [:show, :follow, :unfollow]
+  before_action :set_user, only: [ :show, :follow, :unfollow ]
 
   def index
     users = User.all
@@ -22,7 +22,7 @@ class Api::V1::UsersController < ApplicationController
   def follow
     follow = current_user.follows_as_follower.build(followed: @user)
     if follow.save
-      render json: { message: 'Followed successfully' }, status: :ok
+      render json: { message: "Followed successfully" }, status: :ok
     else
       render json: { errors: follow.errors }, status: :unprocessable_entity
     end
@@ -31,9 +31,9 @@ class Api::V1::UsersController < ApplicationController
   def unfollow
     follow = current_user.follows_as_follower.find_by(followed: @user)
     if follow&.destroy
-      render json: { message: 'Unfollowed successfully' }, status: :ok
+      render json: { message: "Unfollowed successfully" }, status: :ok
     else
-      render json: { error: 'Not following' }, status: :not_found
+      render json: { error: "Not following" }, status: :not_found
     end
   end
 

@@ -8,26 +8,47 @@ class FriendsSleepsQuery
   end
 
   def call
-    Rails.cache.fetch(cache_key, expires_in: 1.hour) do
-      parse_dates
-      return { errors: @errors } if @errors.present?
+    cached_data = Rails.cache.read(cache_key)
 
-      followed_user_ids = @user.following.pluck(:id)
-      return empty_response if followed_user_ids.empty?
-
-      sleeps = fetch_paginated_sleeps(followed_user_ids)
-      summaries = fetch_summaries(followed_user_ids)
-
-      {
-        sleeps: sleeps.as_json(include: :user),
-        summaries: summaries,
-        pagination: {
-          current_page: sleeps.current_page,
-          total_pages: sleeps.total_pages,
-          total_count: sleeps.total_count
-        }
-      }
+    if cached_data.nil?
+      # Cache miss: enqueue a background job and return an empty/loading state immediately.
+      WarmFriendsSleepsCacheJob.perform_later(
+        @user.id, @start_date_str, @end_date_str, @page, @per_page
+      )
+      return loading_response
     end
+
+    cached_data
+  end
+
+  def warm_cache
+    # This method is called by the background job to do the actual work.
+    # It writes the result to the cache.
+    data_to_cache = Rails.cache.fetch(cache_key, expires_in: 1.hour) do
+      generate_response_data
+    end
+    data_to_cache
+  end
+
+  def generate_response_data
+    parse_dates
+    return { errors: @errors } if @errors.present?
+
+    followed_user_ids = @user.following.pluck(:id)
+    return empty_response if followed_user_ids.empty?
+
+    sleeps = fetch_paginated_sleeps(followed_user_ids)
+    summaries = fetch_summaries(followed_user_ids)
+
+    {
+      sleeps: sleeps.as_json(include: :user),
+      summaries: summaries,
+      pagination: {
+        current_page: sleeps.current_page,
+        total_pages: sleeps.total_pages,
+        total_count: sleeps.total_count
+      }
+    }
   end
 
   private
@@ -44,7 +65,7 @@ class FriendsSleepsQuery
     Sleep.where(user_id: user_ids)
          .where(clock_in: @start_date.beginning_of_day..@end_date.end_of_day)
          .includes(:user)
-         .order('duration DESC')
+         .order("duration DESC")
          .page(@page)
          .per(@per_page)
   end
@@ -64,6 +85,17 @@ class FriendsSleepsQuery
       pagination: {
         current_page: 1, total_pages: 0, total_count: 0
       }
+    }
+  end
+
+  def loading_response
+    {
+      sleeps: [],
+      summaries: {},
+      pagination: {
+        current_page: @page.to_i, total_pages: 0, total_count: 0
+      },
+      status: "loading" # Inform the client that data is being prepared.
     }
   end
 

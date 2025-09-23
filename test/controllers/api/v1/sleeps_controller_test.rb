@@ -1,4 +1,4 @@
-require 'test_helper'
+require "test_helper"
 
 class Api::V1::SleepsControllerTest < ActionDispatch::IntegrationTest
   setup do
@@ -10,28 +10,28 @@ class Api::V1::SleepsControllerTest < ActionDispatch::IntegrationTest
     @sleep = sleeps(:one)
   end
 
-  test 'should get index' do
+  test "should get index" do
     get api_v1_sleeps_url, params: { user_id: @user.id }
     assert_response :success
     sleeps = JSON.parse(response.body)
     assert_equal @user.sleeps.count, sleeps.size
   end
 
-  test 'should create sleep' do
-    assert_difference('@user.sleeps.count') do
+  test "should create sleep" do
+    assert_difference("@user.sleeps.count") do
       post api_v1_sleeps_url, params: { sleep: { clock_in: Time.now }, user_id: @user.id }
     end
     assert_response :created
   end
 
-  test 'should update sleep' do
+  test "should update sleep" do
     patch api_v1_sleep_url(@sleep), params: { sleep: { clock_out: Time.now }, user_id: @user.id }
     assert_response :success
     @sleep.reload
     assert @sleep.clock_out.present?
   end
 
-  test 'should get friends_sleeps with pagination and summaries' do
+  test "should get friends_sleeps with pagination and summaries" do
     # Create follow relationship
     @user.following << @other_user
 
@@ -48,11 +48,11 @@ class Api::V1::SleepsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     response_body = JSON.parse(response.body)
-    assert response_body['sleeps'].present?
-    assert_equal 1, response_body['sleeps'].size  # Per page limit
-    assert response_body['summaries'].present?
-    assert response_body['pagination'].present?
-    assert_equal 1, response_body['pagination']['current_page']
-    assert_equal 2, response_body['pagination']['total_count']
+    assert response_body["sleeps"].present?
+    assert_equal 1, response_body["sleeps"].size  # Per page limit
+    assert response_body["summaries"].present?
+    assert response_body["pagination"].present?
+    assert_equal 1, response_body["pagination"]["current_page"]
+    assert_equal 2, response_body["pagination"]["total_count"]
   end
 end
