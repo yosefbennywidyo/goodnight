@@ -8,6 +8,9 @@ class FriendsSleepsQuery
   end
 
   def call
+    # If the user isn't following anyone, there's no data to fetch. Return immediately.
+    return empty_response if @user.following.empty?
+
     cached_data = Rails.cache.read(cache_key)
 
     if cached_data.nil?
@@ -102,6 +105,7 @@ class FriendsSleepsQuery
   def cache_key
     # Cache version includes followed users' count and latest update time to bust cache on follow/unfollow.
     follow_version = @user.follows_as_follower.pluck(:updated_at).max.to_i
+    follow_version = @user.follows_as_follower.maximum(:updated_at).to_i
     "friends_sleeps/v2/#{@user.id}-#{follow_version}/#{@start_date_str}-#{@end_date_str}/p#{@page}-#{@per_page}"
   end
 end
