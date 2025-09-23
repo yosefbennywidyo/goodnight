@@ -1,6 +1,8 @@
 require "test_helper"
 
 class Api::V1::SleepsControllerTest < ActionDispatch::IntegrationTest
+  include ActiveJob::TestHelper
+
   setup do
     @user = users(:one)
     @other_user = users(:two)
@@ -32,27 +34,56 @@ class Api::V1::SleepsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should get friends_sleeps with pagination and summaries" do
+    # Override cache store for this test to enable caching
+    original_cache = Rails.cache
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
+
     # Create follow relationship
     @user.following << @other_user
 
     # Destroy existing sleeps for @other_user to avoid fixture interference
     @other_user.sleeps.destroy_all
 
-    # Create sleep records for the followed user
+    # Create sleep records for the followed user, ordered by duration DESC
     sleep1 = @other_user.sleeps.create!(clock_in: @start_date + 1.day, clock_out: @start_date + 1.day + 8.hours, duration: 480)
     sleep2 = @other_user.sleeps.create!(clock_in: @start_date + 2.days, clock_out: @start_date + 2.days + 7.hours, duration: 420)
 
-    # Make request with pagination
-    get friends_sleeps_api_v1_sleeps_url, params: { user_id: @user.id, start_date: @start_date, end_date: @end_date, page: 1, per_page: 1 }
+    # 1. First request: Cache miss, should enqueue a job and return a loading state.
+    get friends_sleeps_api_v1_sleeps_url, params: { user_id: @user.id, start_date: @start_date.to_s, end_date: @end_date.to_s, page: 1, per_page: 1 }
 
+    assert_response :success
+    response_body = JSON.parse(response.body)
+    assert_equal "loading", response_body["status"]
+    assert_empty response_body["sleeps"]
+
+    # 2. Perform the job that was enqueued by the first request to warm the cache
+    # We also assert that exactly one job was enqueued.
+    assert_enqueued_jobs 1
+    perform_enqueued_jobs
+
+    # 3. Second request: Cache hit, should return the actual data.
+    get friends_sleeps_api_v1_sleeps_url, params: { user_id: @user.id, start_date: @start_date.to_s, end_date: @end_date.to_s, page: 1, per_page: 1 }
+    assert_response :success
+    response_body = JSON.parse(response.body)
+
+    assert response_body["sleeps"].present?
+    assert_equal 1, response_body["sleeps"].size
+    assert_equal sleep1.id, response_body["sleeps"].first["id"] # Verify correct record is returned based on sorting
+    assert response_body["summaries"].present?
+    assert_equal 2, response_body["pagination"]["total_count"]
+  ensure
+    Rails.cache = original_cache
+  end
+
+  test "should return empty response for friends_sleeps if user follows no one" do
+    # Ensure the user is not following anyone
+    @user.following.destroy_all
+
+    get friends_sleeps_api_v1_sleeps_url, params: { user_id: @user.id }
     assert_response :success
 
     response_body = JSON.parse(response.body)
-    assert response_body["sleeps"].present?
-    assert_equal 1, response_body["sleeps"].size  # Per page limit
-    assert response_body["summaries"].present?
-    assert response_body["pagination"].present?
-    assert_equal 1, response_body["pagination"]["current_page"]
-    assert_equal 2, response_body["pagination"]["total_count"]
+    assert_empty response_body["sleeps"]
+    assert_not response_body.key?("status"), "Should not return 'loading' status"
   end
 end
